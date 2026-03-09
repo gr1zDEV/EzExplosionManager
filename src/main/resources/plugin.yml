@@ -1,0 +1,7 @@
+name: EzExplosionManager
+main: com.ezinnovations.ezexplosionmanager.EzExplosionManagerPlugin
+version: 1.0.0
+api-version: '1.16'
+author: EzInnovations
+description: Fine-grained explosion damage controls for crystals, TNT minecarts, and risky block blasts.
+folia-supported: true
