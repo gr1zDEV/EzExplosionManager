@@ -1,0 +1,13 @@
+meta:
+  revision: 1
+
+telemetry:
+  verbose-debug: false
+
+blast-control:
+  crystal-scale: 1.0
+  minecart-scale: 1.0
+  bed-anchor-scale: 1.0
+
+rules:
+  crystal-owner-vanilla-damage: true
