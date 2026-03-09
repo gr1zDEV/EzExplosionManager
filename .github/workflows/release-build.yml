@@ -1,0 +1,40 @@
+name: Build and Release Plugin JAR
+
+on:
+  push:
+    tags:
+      - '*'
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  build-and-release:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Set up Java
+        uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '17'
+          cache: maven
+
+      - name: Build with Maven
+        run: mvn -B clean package
+
+      - name: Upload build artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: ezexplosionmanager-${{ github.ref_name }}
+          path: target/*.jar
+
+      - name: Attach JAR to GitHub Release
+        uses: softprops/action-gh-release@v2
+        with:
+          files: target/*.jar
+          tag_name: ${{ github.ref_name }}
