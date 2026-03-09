@@ -8,18 +8,24 @@ import org.bukkit.plugin.java.JavaPlugin;
 public final class EzExplosionManagerPlugin extends JavaPlugin {
 
     private ExplosionSettings settings;
+    private ExplosionDamageListener damageListener;
 
     @Override
     public void onEnable() {
         saveDefaultConfig();
         settings = ExplosionSettings.loadFromConfig(this);
 
-        getServer().getPluginManager().registerEvents(new ExplosionDamageListener(this, settings), this);
+        damageListener = new ExplosionDamageListener(this, settings);
+        getServer().getPluginManager().registerEvents(damageListener, this);
         getLogger().info("EzExplosionManager enabled.");
     }
 
     @Override
     public void onDisable() {
+        if (damageListener != null) {
+            damageListener.clearTrackingData();
+            damageListener = null;
+        }
         getLogger().info("EzExplosionManager disabled.");
     }
 }

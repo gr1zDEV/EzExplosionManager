@@ -26,12 +26,13 @@ import java.util.concurrent.ConcurrentHashMap;
 public final class ExplosionDamageListener implements Listener {
 
     private static final long BLOCK_BLAST_TRACK_WINDOW_MS = 2500L;
+    private static final long CRYSTAL_ATTACKER_TRACK_WINDOW_MS = 5 * 60 * 1000L;
     private static final double BLOCK_BLAST_DETECTION_RADIUS_SQUARED = 144.0D; // 12 blocks.
 
     private final EzExplosionManagerPlugin plugin;
     private final ExplosionSettings settings;
 
-    private final Map<UUID, UUID> crystalAttackerByCrystal = new ConcurrentHashMap<UUID, UUID>();
+    private final Map<UUID, TrackedAttacker> crystalAttackerByCrystal = new ConcurrentHashMap<UUID, TrackedAttacker>();
     private final Map<LocationMarker, Long> recentBedOrAnchorBlasts = new ConcurrentHashMap<LocationMarker, Long>();
 
     public ExplosionDamageListener(EzExplosionManagerPlugin plugin, ExplosionSettings settings) {
@@ -48,6 +49,24 @@ public final class ExplosionDamageListener implements Listener {
     }
 
     @EventHandler(priority = EventPriority.MONITOR, ignoreCancelled = true)
+    public void onCrystalRemoved(EntityDamageEvent event) {
+        if (!(event.getEntity() instanceof EnderCrystal)) {
+            return;
+        }
+
+        EnderCrystal crystal = (EnderCrystal) event.getEntity();
+        UUID crystalId = crystal.getUniqueId();
+        plugin.getServer().getScheduler().runTask(plugin, new Runnable() {
+            @Override
+            public void run() {
+                if (!crystal.isValid() || crystal.isDead()) {
+                    crystalAttackerByCrystal.remove(crystalId);
+                }
+            }
+        });
+    }
+
+    @EventHandler(priority = EventPriority.MONITOR, ignoreCancelled = true)
     public void onCrystalDamaged(EntityDamageByEntityEvent event) {
         if (!(event.getEntity() instanceof EnderCrystal)) {
             return;
@@ -55,7 +74,8 @@ public final class ExplosionDamageListener implements Listener {
 
         Player attacker = findResponsiblePlayer(event.getDamager());
         if (attacker != null) {
-            crystalAttackerByCrystal.put(event.getEntity().getUniqueId(), attacker.getUniqueId());
+            purgeOldCrystalAttackers(System.currentTimeMillis());
+            crystalAttackerByCrystal.put(event.getEntity().getUniqueId(), new TrackedAttacker(attacker.getUniqueId(), System.currentTimeMillis()));
         }
     }
 
@@ -69,6 +89,10 @@ public final class ExplosionDamageListener implements Listener {
 
     @EventHandler(priority = EventPriority.MONITOR, ignoreCancelled = true)
     public void onEntityExplode(EntityExplodeEvent event) {
+        if (event.getEntityType() == EntityType.ENDER_CRYSTAL && event.getEntity() != null) {
+            crystalAttackerByCrystal.remove(event.getEntity().getUniqueId());
+        }
+
         // Defensive fallback: block explosions may be represented differently on some forks/versions.
         if (event.getEntityType() == EntityType.PRIMED_TNT || event.getEntityType() == EntityType.MINECART_TNT) {
             return;
@@ -163,8 +187,27 @@ public final class ExplosionDamageListener implements Listener {
             return false;
         }
 
-        UUID owner = crystalAttackerByCrystal.get(damager.getUniqueId());
-        return owner != null && owner.equals(player.getUniqueId());
+        purgeOldCrystalAttackers(System.currentTimeMillis());
+
+        TrackedAttacker owner = crystalAttackerByCrystal.get(damager.getUniqueId());
+        if (owner == null) {
+            return false;
+        }
+
+        return owner.playerId.equals(player.getUniqueId());
+    }
+
+    public void clearTrackingData() {
+        crystalAttackerByCrystal.clear();
+        recentBedOrAnchorBlasts.clear();
+    }
+
+    private void purgeOldCrystalAttackers(long now) {
+        for (Map.Entry<UUID, TrackedAttacker> entry : crystalAttackerByCrystal.entrySet()) {
+            if (now - entry.getValue().trackedAtMs > CRYSTAL_ATTACKER_TRACK_WINDOW_MS) {
+                crystalAttackerByCrystal.remove(entry.getKey());
+            }
+        }
     }
 
     private Player findResponsiblePlayer(Entity rawDamager) {
@@ -178,6 +221,16 @@ public final class ExplosionDamageListener implements Listener {
             }
         }
         return null;
+    }
+
+    private static final class TrackedAttacker {
+        private final UUID playerId;
+        private final long trackedAtMs;
+
+        private TrackedAttacker(UUID playerId, long trackedAtMs) {
+            this.playerId = playerId;
+            this.trackedAtMs = trackedAtMs;
+        }
     }
 
     private boolean isBedOrAnchor(Material material) {
