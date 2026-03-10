@@ -5,3 +5,12 @@ api-version: '1.16'
 author: EzInnovations
 description: Fine-grained explosion damage controls for crystals, TNT minecarts, and risky block blasts.
 folia-supported: true
+commands:
+  ezexplosionmanager:
+    description: EzExplosionManager admin commands
+    usage: /<command> reload
+    aliases: [eem]
+permissions:
+  ezexplosionmanager.reload:
+    description: Allows reloading EzExplosionManager config
+    default: op

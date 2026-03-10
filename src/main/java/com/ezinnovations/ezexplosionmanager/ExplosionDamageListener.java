@@ -31,7 +31,7 @@ public final class ExplosionDamageListener implements Listener {
     private static final double BLOCK_BLAST_DETECTION_RADIUS_SQUARED = 144.0D; // 12 blocks.
 
     private final EzExplosionManagerPlugin plugin;
-    private final ExplosionSettings settings;
+    private volatile ExplosionSettings settings;
 
     private final Map<UUID, TrackedAttacker> crystalAttackerByCrystal = new ConcurrentHashMap<UUID, TrackedAttacker>();
     private final Map<LocationMarker, Long> recentBedOrAnchorBlasts = new ConcurrentHashMap<LocationMarker, Long>();
@@ -39,6 +39,12 @@ public final class ExplosionDamageListener implements Listener {
     public ExplosionDamageListener(EzExplosionManagerPlugin plugin, ExplosionSettings settings) {
         this.plugin = plugin;
         this.settings = settings;
+    }
+
+    public void updateSettings(ExplosionSettings newSettings) {
+        if (newSettings != null) {
+            this.settings = newSettings;
+        }
     }
 
     @EventHandler(priority = EventPriority.MONITOR, ignoreCancelled = true)
