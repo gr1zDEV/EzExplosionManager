@@ -175,7 +175,8 @@ public final class ExplosionDamageListener implements Listener {
         double originalDamage = event.getDamage();
         boolean bypass = false;
 
-        double multiplier = settings.multiplierFor(source);
+        String worldName = player.getWorld() == null ? null : player.getWorld().getName();
+        double multiplier = settings.multiplierFor(source, worldName);
         if (source == ExplosionSource.END_CRYSTAL && settings.isCrystalSelfBypass()) {
             if (isCrystalSelfDamage(player, event)) {
                 multiplier = 1.0D;
