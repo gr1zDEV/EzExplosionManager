@@ -5,6 +5,7 @@ package com.ezinnovations.ezexplosionmanager;
  */
 public enum ExplosionSource {
     END_CRYSTAL,
+    TNT,
     TNT_MINECART,
     BED_OR_ANCHOR
 }
