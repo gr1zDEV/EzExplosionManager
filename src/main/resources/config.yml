@@ -48,6 +48,20 @@ blast-control:
   # Examples: 1.0 (vanilla), 0.8 (reduced), 0.0 (disabled)
   bed-anchor-scale: 1.0
 
+
+world-overrides:
+  # Optional per-world damage multipliers.
+  # Each key under this section must match a world name exactly (case-insensitive).
+  # If a world is listed here, these values override blast-control for that world only.
+  #
+  # Example:
+  # world:
+  #   crystal-scale: 0.8
+  #   tnt-scale: 0.6
+  #   minecart-scale: 0.6
+  #   bed-anchor-scale: 1.0
+  {}
+
 rules:
   # If true, the player who triggered/damaged a crystal can still take vanilla
   # End Crystal damage even when crystal-scale is lowered.
