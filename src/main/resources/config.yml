@@ -1,13 +1,56 @@
+# =============================================================
+# EzExplosionManager Configuration
+# -------------------------------------------------------------
+# This plugin lets you scale player damage from specific explosion types.
+# It supports Bukkit/Spigot/Paper/Folia and Minecraft 1.16 - 1.21+.
+#
+# Multiplier rules used throughout this file:
+# - 1.0 = vanilla damage
+# - 0.5 = half damage
+# - 0.0 = no damage
+# - values > 1.0 increase damage
+# - negative/invalid values are sanitized to 0.0 by the plugin
+# =============================================================
+
 meta:
+  # Internal config revision used by the plugin for future migrations.
+  # Valid values: positive whole numbers.
+  # Example: 1
   revision: 1
 
 telemetry:
+  # Enables debug logging in console whenever the plugin adjusts explosion damage.
+  # Valid values: true/false.
+  # Example: true
   verbose-debug: false
 
 blast-control:
+  # Multiplier for End Crystal explosion damage against players.
+  # Valid values: decimal number >= 0.0.
+  # Examples: 1.0 (vanilla), 0.7 (reduced), 0.0 (disabled)
   crystal-scale: 1.0
+
+  # Multiplier for normal primed TNT block explosion damage against players.
+  # This applies to TNTPrimed entities only (not TNT Minecarts).
+  # Valid values: decimal number >= 0.0.
+  # Examples: 1.0 (vanilla), 0.5 (half), 0.0 (disabled)
+  tnt-scale: 1.0
+
+  # Multiplier for TNT Minecart explosion damage against players.
+  # This is independent from normal primed TNT.
+  # Valid values: decimal number >= 0.0.
+  # Examples: 1.0 (vanilla), 0.25 (heavily reduced), 0.0 (disabled)
   minecart-scale: 1.0
+
+  # Multiplier for bed and respawn anchor explosion damage against players.
+  # Covers Nether/End bed explosions and respawn anchor explosions.
+  # Valid values: decimal number >= 0.0.
+  # Examples: 1.0 (vanilla), 0.8 (reduced), 0.0 (disabled)
   bed-anchor-scale: 1.0
 
 rules:
+  # If true, the player who triggered/damaged a crystal can still take vanilla
+  # End Crystal damage even when crystal-scale is lowered.
+  # Valid values: true/false.
+  # Example: true
   crystal-owner-vanilla-damage: true

@@ -194,6 +194,9 @@ public final class ExplosionDamageListener implements Listener {
             if (damager.getType() == EntityType.ENDER_CRYSTAL) {
                 return ExplosionSource.END_CRYSTAL;
             }
+            if (damager.getType() == EntityType.PRIMED_TNT) {
+                return ExplosionSource.TNT;
+            }
             if (damager.getType() == EntityType.MINECART_TNT) {
                 return ExplosionSource.TNT_MINECART;
             }
