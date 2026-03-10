@@ -19,6 +19,7 @@ import org.bukkit.event.entity.EntitySpawnEvent;
 import java.util.Map;
 import java.util.UUID;
 import java.util.concurrent.ConcurrentHashMap;
+import java.util.function.Consumer;
 
 /**
  * Handles explosion damage re-scaling and source attribution.
@@ -56,14 +57,65 @@ public final class ExplosionDamageListener implements Listener {
 
         EnderCrystal crystal = (EnderCrystal) event.getEntity();
         UUID crystalId = crystal.getUniqueId();
-        plugin.getServer().getScheduler().runTask(plugin, new Runnable() {
+        if (!scheduleCrystalStateCheck(crystal, crystalId)) {
+            // Folia-safe fallback when scheduling APIs are unavailable.
+            if (!crystal.isValid() || crystal.isDead()) {
+                crystalAttackerByCrystal.remove(crystalId);
+            }
+        }
+    }
+
+    private boolean scheduleCrystalStateCheck(final EnderCrystal crystal, final UUID crystalId) {
+        Runnable check = new Runnable() {
             @Override
             public void run() {
                 if (!crystal.isValid() || crystal.isDead()) {
                     crystalAttackerByCrystal.remove(crystalId);
                 }
             }
-        });
+        };
+
+        try {
+            Object entityScheduler = crystal.getClass().getMethod("getScheduler").invoke(crystal);
+            if (entityScheduler != null) {
+                Consumer<Object> consumer = new Consumer<Object>() {
+                    @Override
+                    public void accept(Object ignored) {
+                        check.run();
+                    }
+                };
+
+                for (java.lang.reflect.Method method : entityScheduler.getClass().getMethods()) {
+                    Class<?>[] parameterTypes = method.getParameterTypes();
+                    if ("run".equals(method.getName())
+                            && parameterTypes.length == 3
+                            && org.bukkit.plugin.Plugin.class.isAssignableFrom(parameterTypes[0])
+                            && Consumer.class.isAssignableFrom(parameterTypes[1])
+                            && Runnable.class.isAssignableFrom(parameterTypes[2])) {
+                        method.invoke(entityScheduler, plugin, consumer, null);
+                        return true;
+                    }
+                }
+            }
+        } catch (ReflectiveOperationException ignored) {
+            // Not a Folia scheduler environment; use Bukkit scheduler fallback below.
+        }
+
+        if (isFoliaServer()) {
+            return false;
+        }
+
+        plugin.getServer().getScheduler().runTask(plugin, check);
+        return true;
+    }
+
+    private boolean isFoliaServer() {
+        try {
+            Class.forName("io.papermc.paper.threadedregions.RegionizedServer");
+            return true;
+        } catch (ClassNotFoundException ignored) {
+            return false;
+        }
     }
 
     @EventHandler(priority = EventPriority.MONITOR, ignoreCancelled = true)
